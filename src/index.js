@@ -24,8 +24,8 @@ class Duck extends Creature {
 }
 
 class Dog extends Creature {
-    constructor() {
-        super('Пес-бандит', 3);
+    constructor(name = 'Пес-бандит', power = 3) {
+        super(name, power);
     }
 }
 

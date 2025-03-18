@@ -23,13 +23,50 @@ class Duck extends Creature {
     }
 }
 
-
-
-
-
 class Dog extends Creature {
     constructor() {
         super('Пес-бандит', 3);
+    }
+}
+
+class Trasher extends Dog {
+    constructor() {
+        super('Громила', 5);
+    }
+
+    modifyTakenDamage(damage, fromCard, gameContext, continuation) {
+        const reducedDamage = Math.max(damage - 1, 0);
+        this.view.signalAbility(() => {
+            super.modifyTakenDamage(reducedDamage, fromCard, gameContext, continuation);
+        });
+    }
+
+    getDescriptions() {
+        return ['Получает на 1 меньше урона при атаке', ...super.getDescriptions()];
+    }
+}
+
+class Gatling extends Creature {
+    constructor() {
+        super('Гатлинг', 6);
+    }
+
+    attack(gameContext, continuation) {
+        const taskQueue = new TaskQueue();
+        const { oppositePlayer } = gameContext;
+
+        oppositePlayer.table.forEach(card => {
+            taskQueue.push(continuation => {
+                this.view.showAttack();
+                card.takeDamage(2, this, gameContext, continuation);
+            });
+        });
+
+        taskQueue.continueWith(continuation);
+    }
+
+    getDescriptions() {
+        return ['Атакует всех врагов по очереди с уроном 2', ...super.getDescriptions()];
     }
 }
 
@@ -37,9 +74,12 @@ const seriffStartDeck = [
     new Duck(),
     new Duck(),
     new Duck(),
+    new Gatling(),
 ];
 
 const banditStartDeck = [
+    new Trasher(),
+    new Dog(),
     new Dog(),
 ];
 

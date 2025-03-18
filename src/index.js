@@ -24,8 +24,8 @@ class Duck extends Creature {
 }
 
 class Dog extends Creature {
-    constructor() {
-        super('Пес-бандит', 3);
+    constructor(name = 'Пес-бандит', power = 3) {
+        super(name, power);
     }
 }
 
@@ -70,17 +70,72 @@ class Gatling extends Creature {
     }
 }
 
+class Lad extends Dog {
+    constructor() {
+        super('Браток', 2);
+    }
+
+    static getInGameCount() {
+        return this._inGameCount || 0;
+    }
+
+    static setInGameCount(value) {
+        this._inGameCount = Math.max(value, 0);
+    }
+
+    static getBonus() {
+        const count = this.getInGameCount();
+        return count * (count + 1) / 2;
+    }
+
+    doAfterComingIntoPlay(gameContext, continuation) {
+        super.doAfterComingIntoPlay?.(gameContext, continuation);
+        Lad.setInGameCount(Lad.getInGameCount() + 1);
+        continuation?.();
+    }
+
+    doBeforeRemoving(gameContext, continuation) {
+        super.doBeforeRemoving?.(gameContext, continuation);
+        Lad.setInGameCount(Lad.getInGameCount() - 1);
+        continuation?.();
+    }
+
+    modifyDealedDamageToCreature(damage, toCard, gameContext, continuation) {
+        const modifiedDamage = damage + Lad.getBonus();
+        continuation?.(modifiedDamage);
+        return modifiedDamage;
+    }
+
+    modifyTakenDamage(damage, fromCard, gameContext, continuation) {
+        const bonus = Lad.getBonus();
+        const modifiedDamage = Math.max(damage - bonus, 0);
+
+        if (modifiedDamage > 0) {
+            return super.modifyTakenDamage(modifiedDamage, fromCard, gameContext, continuation);
+        } else {
+            continuation(0);
+            return 0;
+        }
+    }
+
+    getDescriptions() {
+        const descriptions = super.getDescriptions();
+        if (Lad.prototype.hasOwnProperty('modifyDealedDamageToCreature')) {
+            descriptions.unshift('Чем их больше, тем они сильнее');
+        }
+        return descriptions;
+    }
+}
+
 const seriffStartDeck = [
-    new Duck(),
     new Duck(),
     new Duck(),
     new Gatling(),
 ];
 
 const banditStartDeck = [
-    new Trasher(),
-    new Dog(),
-    new Dog(),
+    new Lad(),
+    new Lad(),
 ];
 
 function isDuck(card) {
@@ -92,15 +147,9 @@ function isDog(card) {
 }
 
 function getCreatureDescription(card) {
-    if (isDuck(card) && isDog(card)) {
-        return 'Утка-Собака';
-    }
-    if (isDuck(card)) {
-        return 'Утка';
-    }
-    if (isDog(card)) {
-        return 'Собака';
-    }
+    if (isDuck(card) && isDog(card)) return 'Утка-Собака';
+    if (isDuck(card)) return 'Утка';
+    if (isDog(card)) return 'Собака';
     return 'Существо';
 }
 

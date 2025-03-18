@@ -127,14 +127,71 @@ class Lad extends Dog {
     }
 }
 
+class Rogue extends Creature {
+    constructor() {
+        super('Изгой', 2);
+        this._stolenAbilities = new Map();
+    }
+
+    attack(gameContext, continuation) {
+        const targetCard = gameContext.oppositePlayer.table[0];
+        if (!targetCard) {
+            continuation();
+            return;
+        }
+const targetProto = Object.getPrototypeOf(targetCard);
+const abilities = ['modifyDealedDamageToCreature', 'modifyDealedDamageToPlayer', 'modifyTakenDamage'];
+
+gameContext.oppositePlayer.table.forEach(card => {
+    if (Object.getPrototypeOf(card) === targetProto) {
+        abilities.forEach(ability => {
+            if (targetProto.hasOwnProperty(ability)) {
+                if (!this._stolenAbilities.has(ability)) {
+                    this._stolenAbilities.set(ability, targetProto[ability]);
+                    this[ability] = targetProto[ability];
+                }
+                delete targetProto[ability];
+            }
+        });
+    }
+});
+
+gameContext.updateView();
+
+this.view.showAttack(() => {
+    targetCard.takeDamage(this.power, this, gameContext, continuation);
+});
+}
+
+getDescriptions() {
+    return ['Крадет способности у всех существ одного типа', ...super.getDescriptions()];
+}
+}
+
+class PseudoDuck extends Dog {
+    constructor() {
+        super('Псевдоутка', 3);
+    }
+
+    quacks() {
+        console.log('quack');
+    }
+
+    swims() {
+        console.log('float: both;');
+    }
+}
+
 const seriffStartDeck = [
     new Duck(),
     new Duck(),
-    new Gatling(),
+    new Duck(),
+//    new Rogue(),
 ];
 
 const banditStartDeck = [
     new Lad(),
+//    new PseudoDuck(),
     new Lad(),
 ];
 
